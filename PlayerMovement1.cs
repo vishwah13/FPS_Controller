@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +7,8 @@ using UnityEngine;
 public class PlayerMovement1 : MonoBehaviour
 {
     private CharacterController controller;
+    private float x;
+    private float z;
     
     public float gravity = -9.82f;
     public float jumpHeight=3f;
@@ -13,19 +16,18 @@ public class PlayerMovement1 : MonoBehaviour
     public float runningSpeed;
     private float currentSpeed;
     private Vector3 velocity;
+    public Vector3 move;
     
     //for checking ground 
     public Transform groundCheck;
     public float groundDistance = 0.4f;
     public LayerMask groundMask;
     private bool isGrounded;
-    private bool isCrouching = false;
     
-    //for sliding
-    public float slidingSpeed=6f;
-    private bool isSliding;
-    private float slideTimer;
-    private float slideTimeMax = 1f;
+    //for crouching
+    private bool isCrouching;
+    public float crouchSpeed= 4f;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -34,72 +36,67 @@ public class PlayerMovement1 : MonoBehaviour
     void Update()
     {
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        GetInput();
+    }
 
+    private void FixedUpdate()
+    {
         if (isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
             isCrouching = true;
         }
-        //for movement
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-
-        Vector3 move = transform.right * x + transform.forward * z;
         
-        //for running 
-        bool isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ;
-        currentSpeed = isRunning ? runningSpeed : walkSpeed;
-        
-
+        move = transform.right * x + transform.forward * z;
         controller.Move(move * currentSpeed * Time.deltaTime);
-
-        if (Input.GetButtonDown("Jump") && isGrounded)
-        {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
-        }
-
-        //to create gravity
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
         
         //for crouching
         if (!isGrounded)
         {
             isCrouching = false;
         }
-        if (Input.GetKeyDown(KeyCode.C) && isCrouching)
-        {
-            controller.height = .5f;
-        }
-        if (Input.GetKeyUp(KeyCode.C))
-        {
-            controller.height = 2f;
+        
+        
+        //to create gravity
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+    }
+
+    void GetInput()
+    {
+        //for movement
+        x = Input.GetAxis("Horizontal");
+        z = Input.GetAxis("Vertical");
+        
+        
+        //for checking if plaer is running or crouching and set the current speed
+        bool isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ;
+        bool crouch = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        currentSpeed = crouch ? crouchSpeed : isRunning ? runningSpeed : walkSpeed;
+        
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {    //for add jump force to player 
+            velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
         }
         
-        //for sliding
-        if (isRunning && Input.GetKey(KeyCode.LeftControl) && !isSliding)
+        if (Input.GetKeyDown(KeyCode.LeftControl) && isCrouching)
         {
-            slideTimer = 0.0f;
-            isSliding = true;
+            startCrouch();
         }
-
-        if (isSliding)
+        if (Input.GetKeyUp(KeyCode.LeftControl))
         {
-            currentSpeed = slidingSpeed;
-            controller.height = 0.5f;
-
-            slideTimer += Time.deltaTime;
-            if (slideTimer > slideTimeMax)
-            {
-                isSliding = false;
-
-            }
+            stopCrouch();
         }
+    }
 
-        if (!isSliding && !isCrouching)
-        {
-            controller.height = 2f;
-        }
+    void startCrouch()
+    {
+        controller.height = .5f;
         
+    }
+
+    void stopCrouch()
+    {
+        controller.height = 2f;
     }
 }
