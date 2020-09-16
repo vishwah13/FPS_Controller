@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerMovement1 : MonoBehaviour
+public class FPS_Controller : MonoBehaviour
 {
     private CharacterController controller;
     private float x;
